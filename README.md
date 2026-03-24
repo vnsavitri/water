@@ -32,4 +32,4 @@ Just serve the `index.html` file from the repo root.
 
 ## Preview
 
-![Water Tracker Screenshot](assets/water-tracker-screenshot.png)
+<img src="assets/water-tracker-screenshot.png" alt="Water Tracker Screenshot" width="400" />
