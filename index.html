@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Water Tracker</title>
+    <style>
+        :root {
+            --color-bg-primary: #0f172a;
+            --color-bg-secondary: #1e293b;
+            --color-bg-tertiary: #334155;
+            --color-text-primary: #f1f5f9;
+            --color-text-secondary: #cbd5e1;
+            --color-text-muted: #94a3b8;
+            --color-accent: #38bdf8;
+            --color-accent-hover: #0ea5e9;
+            --color-success: #22c55e;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+            touch-action: manipulation;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-top: 20px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--color-accent) 0%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .progress-section {
+            background: var(--color-bg-secondary);
+            border-radius: 24px;
+            padding: 32px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(56, 189, 248, 0.1);
+        }
+
+        .progress-ring {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 24px;
+        }
+
+        .progress-ring svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .progress-ring-circle-bg {
+            stroke: var(--color-bg-tertiary);
+            fill: none;
+            stroke-width: 12;
+        }
+
+        .progress-ring-circle {
+            stroke: var(--color-accent);
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease;
+            filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.4));
+        }
+
+        .progress-ring-circle.success {
+            stroke: var(--color-success);
+            filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.6));
+        }
+
+        .progress-ring-circle.exceeded {
+            stroke: var(--color-warning);
+            filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.6));
+        }
+
+        .progress-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .progress-count {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 4px;
+            color: var(--color-text-primary);
+        }
+
+        .progress-label {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-message {
+            text-align: center;
+            font-size: 1.125rem;
+            font-weight: 500;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .status-message.active {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--color-accent);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .status-message.success {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--color-success);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-message.exceeded {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        button {
+            flex: 1;
+            padding: 18px;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        button:active {
+            transform: scale(0.96);
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, var(--color-accent) 0%, #0ea5e9 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn-add:hover {
+            box-shadow: 0 6px 24px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-subtract {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-subtract:hover {
+            background: #475569;
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-bg-tertiary);
+            padding: 14px;
+            font-size: 0.95rem;
+        }
+
+        .btn-reset:hover {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+        }
+
+        .glass-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .glass-icon {
+            aspect-ratio: 1;
+            background: var(--color-bg-tertiary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 2px solid transparent;
+        }
+
+        .glass-icon.filled {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.2) 100%);
+            border-color: rgba(56, 189, 248, 0.3);
+            animation: fillGlass 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .glass-icon.exceeded {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(251, 146, 60, 0.2) 100%);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        @keyframes fillGlass {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .stats {
+            background: var(--color-bg-secondary);
+            border-radius: 16px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            border: 1px solid rgba(56, 189, 248, 0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--color-accent);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+        }
+
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--color-accent);
+            opacity: 0;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 375px) {
+            .progress-ring {
+                width: 180px;
+                height: 180px;
+            }
+            
+            .progress-count {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💧 Water Tracker</h1>
+            <p class="subtitle">Stay hydrated, stay healthy</p>
+        </header>
+
+        <div class="progress-section">
+            <div class="progress-ring">
+                <svg width="200" height="200">
+                    <circle class="progress-ring-circle-bg" cx="100" cy="100" r="85"></circle>
+                    <circle class="progress-ring-circle" cx="100" cy="100" r="85" stroke-dasharray="534.07" stroke-dashoffset="534.07"></circle>
+                </svg>
+                <div class="progress-content">
+                    <div class="progress-count" id="glassCount">0</div>
+                    <div class="progress-label">glasses</div>
+                </div>
+            </div>
+
+            <div class="status-message active" id="statusMessage">
+                Let's start your hydration journey! 🚀
+            </div>
+
+            <div class="glass-grid" id="glassGrid">
+                <!-- Glass icons will be generated here -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-add" id="addBtn">
+                <span>+ Add Glass</span>
+            </button>
+            <button class="btn-subtract" id="subtractBtn">
+                <span>- Remove</span>
+            </button>
+        </div>
+
+        <button class="btn-reset" id="resetBtn">Reset Daily Count</button>
+
+        <div class="stats" style="margin-top: 24px;">
+            <div class="stat-item">
+                <div class="stat-value" id="percentageValue">0%</div>
+                <div class="stat-label">Daily Goal</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="volumeValue">0L</div>
+                <div class="stat-label">Total Volume</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="celebration" id="celebration"></div>
+
+    <script>
+        const GOAL = 8;
+        const GLASS_VOLUME = 0.25; // 250ml in liters
+        const CIRCLE_CIRCUMFERENCE = 534.07;
+
+        let glassCount = 0;
+        let hasShownGoalCelebration = false;
+
+        const elements = {
+            count: document.getElementById('glassCount'),
+            circle: document.querySelector('.progress-ring-circle'),
+            statusMessage: document.getElementById('statusMessage'),
+            glassGrid: document.getElementById('glassGrid'),
+            percentage: document.getElementById('percentageValue'),
+            volume: document.getElementById('volumeValue'),
+            addBtn: document.getElementById('addBtn'),
+            subtractBtn: document.getElementById('subtractBtn'),
+            resetBtn: document.getElementById('resetBtn'),
+            celebration: document.getElementById('celebration')
+        };
+
+        function init() {
+            loadData();
+            renderGlassGrid();
+            updateUI();
+            checkDailyReset();
+        }
+
+        function renderGlassGrid() {
+            elements.glassGrid.innerHTML = '';
+            const maxDisplay = Math.max(GOAL, glassCount);
+            
+            for (let i = 0; i < maxDisplay; i++) {
+                const glass = document.createElement('div');
+                glass.className = 'glass-icon';
+                
+                if (i < glassCount) {
+                    if (i >= GOAL) {
+                        glass.classList.add('exceeded');
+                        glass.textContent = '💧';
+                    } else {
+                        glass.classList.add('filled');
+                        glass.textContent = '💧';
+                    }
+                } else {
+                    glass.textContent = '🥤';
+                }
+                
+                elements.glassGrid.appendChild(glass);
+            }
+        }
+
+        function updateUI() {
+            elements.count.textContent = glassCount;
+            
+            const percentage = Math.min((glassCount / GOAL) * 100, 100);
+            const offset = CIRCLE_CIRCUMFERENCE - (percentage / 100) * CIRCLE_CIRCUMFERENCE;
+            elements.circle.style.strokeDashoffset = offset;
+            
+            if (glassCount >= GOAL) {
+                elements.circle.classList.add('success');
+                elements.circle.classList.remove('exceeded');
+                
+                if (glassCount > GOAL) {
+                    elements.circle.classList.remove('success');
+                    elements.circle.classList.add('exceeded');
+                }
+            } else {
+                elements.circle.classList.remove('success', 'exceeded');
+            }
+            
+            updateStatusMessage();
+            updateStats();
+            renderGlassGrid();
+        }
+
+        function updateStatusMessage() {
+            elements.statusMessage.className = 'status-message';
+            
+            if (glassCount === 0) {
+                elements.statusMessage.textContent = "Let's start your hydration journey! 🚀";
+                elements.statusMessage.classList.add('active');
+            } else if (glassCount < GOAL / 2) {
+                elements.statusMessage.textContent = `Great start! ${GOAL - glassCount} more to go 💪`;
+                elements.statusMessage.classList.add('active');
+            } else if (glassCount < GOAL) {
+                elements.statusMessage.textContent = `You're doing amazing! Only ${GOAL - glassCount} left 🔥`;
+                elements.statusMessage.classList.add('active');
+            } else if (glassCount === GOAL) {
+                elements.statusMessage.textContent = "🎉 Goal achieved! You're a hydration champion!";
+                elements.statusMessage.classList.add('success');
+                
+                if (!hasShownGoalCelebration) {
+                    triggerCelebration();
+                    hasShownGoalCelebration = true;
+                    vibrate();
+                }
+            } else {
+                elements.statusMessage.textContent = `⭐ Overachiever! +${glassCount - GOAL} bonus glasses!`;
+                elements.statusMessage.classList.add('exceeded');
+            }
+        }
+
+        function updateStats() {
+            const percentage = Math.round((glassCount / GOAL) * 100);
+            const volume = (glassCount * GLASS_VOLUME).toFixed(2);
+            
+            elements.percentage.textContent = `${percentage}%`;
+            elements.volume.textContent = `${volume}L`;
+        }
+
+        function addGlass() {
+            glassCount++;
+            saveData();
+            updateUI();
+            vibrate(10);
+        }
+
+        function subtractGlass() {
+            if (glassCount > 0) {
+                glassCount--;
+                if (glassCount < GOAL) {
+                    hasShownGoalCelebration = false;
+                }
+                saveData();
+                updateUI();
+                vibrate(10);
+            }
+        }
+
+        function resetCount() {
+            if (glassCount > 0 && confirm('Reset your daily water count?')) {
+                glassCount = 0;
+                hasShownGoalCelebration = false;
+                saveData();
+                updateUI();
+                vibrate(20);
+            }
+        }
+
+        function triggerCelebration() {
+            const colors = ['#38bdf8', '#22c55e', '#f59e0b', '#ec4899', '#8b5cf6'];
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animation = `confettiFall ${2 + Math.random() * 2}s linear`;
+                    
+                    elements.celebration.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 30);
+            }
+        }
+
+        function vibrate(duration = 50) {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(duration);
+            }
+        }
+
+        function saveData() {
+            const data = {
+                count: glassCount,
+                date: new Date().toDateString(),
+                hasShownCelebration: hasShownGoalCelebration
+            };
+            sessionStorage.setItem('waterTrackerData', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const serialized = sessionStorage.getItem('waterTrackerData');
+            if (serialized) {
+                const data = JSON.parse(serialized);
+                if (data.date === new Date().toDateString()) {
+                    glassCount = data.count || 0;
+                    hasShownGoalCelebration = data.hasShownCelebration || false;
+                }
+            }
+        }
+
+        function checkDailyReset() {
+            setInterval(() => {
+                const serialized = sessionStorage.getItem('waterTrackerData');
+                if (serialized) {
+                    const data = JSON.parse(serialized);
+                    if (data.date !== new Date().toDateString()) {
+                        glassCount = 0;
+                        hasShownGoalCelebration = false;
+                        saveData();
+                        updateUI();
+                    }
+                }
+            }, 60000);
+        }
+
+        elements.addBtn.addEventListener('click', addGlass);
+        elements.subtractBtn.addEventListener('click', subtractGlass);
+        elements.resetBtn.addEventListener('click', resetCount);
+
+        init();
+    </script>
+</body>
+</html>
+
