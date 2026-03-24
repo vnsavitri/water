@@ -30,4 +30,4 @@ A minimal, mobile‑friendly water tracking web app designed for dark mode and d
 You can host this as a static site on any provider (e.g. GitHub Pages or Netlify).  
 Just serve the `index.html` file from the repo root.
 
-![Water Tracker Screenshot](assets/water-tracker-screenshot.png)
+![Water Tracker Screenshot](water/assets/water-tracker-screenshot.png)
